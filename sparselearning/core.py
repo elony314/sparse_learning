@@ -53,7 +53,7 @@ class LinearDecay(object):
         self.steps += 1
         self.current_prune_rate -= self.decrement
 
-    def get_dr(self, prune_rate):
+    def get_dr(self):
         return self.current_prune_rate
 
 
@@ -278,7 +278,7 @@ class Masking(object):
         self.optimizer.step()
         self.apply_mask()
         self.prune_rate_decay.step()
-        self.prune_rate = self.prune_rate_decay.get_dr(self.prune_rate)
+        self.prune_rate = self.prune_rate_decay.get_dr()
 
         self.steps += 1
 
