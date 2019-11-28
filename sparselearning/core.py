@@ -28,16 +28,16 @@ class CosineDecay(object):
 
     This class use code of PyTorch's CosineAnnealingLR to get decayed prune rate
     """
-    def __init__(self, prune_rate, T_max, eta_min=0.005, last_epoch=-1):
+    def __init__(self, prune_rate, T_max, eta_min=0.005):
         self.prune_rate = prune_rate
         self.T_max = T_max
         self.eta_min = eta_min
-        self.last_epoch = last_epoch
+        self.steps = -1
 
     def step(self):
-        self.last_epoch += 1
+        self.steps += 1
         self.prune_rate = self.eta_min + \
-                          (self.prune_rate - self.eta_min) * (1 + math.cos(math.pi * self.last_epoch / self.T_max)) / 2
+                          (self.prune_rate - self.eta_min) * (1 + math.cos(math.pi * self.steps / self.T_max)) / 2
 
     def get_dr(self):
         return self.prune_rate
