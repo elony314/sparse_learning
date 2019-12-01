@@ -274,9 +274,11 @@ class Masking(object):
         if self.verbose:
             self.print_nonzero_counts()
 
-    def step(self):
+    def step(self, is_masking=True):
         self.optimizer.step()
-        self.apply_mask()
+        # TODO: check if better implementations exists
+        if is_masking:
+            self.apply_mask()
         self.prune_rate_decay.step()
         self.prune_rate = self.prune_rate_decay.get_dr()
 
@@ -284,7 +286,7 @@ class Masking(object):
 
         if self.prune_every_k_steps is not None:
             if self.steps % self.prune_every_k_steps == 0:
-                self.truncate_weights()
+                self.truncate_weights(is_masking)
                 if self.verbose:
                     self.print_nonzero_counts()
 
@@ -371,7 +373,7 @@ class Masking(object):
                         # growing
                         self.name2prune_rate[name] = min(sparsity, self.name2prune_rate[name])
 
-    def truncate_weights(self):
+    def truncate_weights(self, is_masking=True):
         self.gather_statistics()
         self.adjust_prune_rate()
 
@@ -408,7 +410,9 @@ class Masking(object):
                     self.masks.pop(name)
                     self.masks[name] = new_mask.float()
                     total_nonzero_new += new_nonzero
-        self.apply_mask()
+        # TODO: check if better implementations exists
+        if is_masking:
+            self.apply_mask()
 
         # Some growth techniques and redistribution are probablistic and we might not grow enough weights or too much weights
         # Here we run an exponential smoothing over (prune-growth) residuals to adjust future growth
