@@ -142,7 +142,7 @@ class Masking(object):
                 self.name_to_32bit[name] = tensor2
             self.half = True
 
-    def init(self, mode='constant', density=0.05):
+    def init(self, mode='constant', density=0.05, is_masking=True):
         self.sparsity = density
         self.init_growth_prune_and_redist()
         self.init_optimizer()
@@ -156,7 +156,8 @@ class Masking(object):
                     if name not in self.masks: continue
                     self.masks[name][:] = (torch.rand(weight.shape) < density).float().data.cuda()
                     self.baseline_nonzero += weight.numel()*density
-            self.apply_mask()
+            if is_masking:
+                self.apply_mask()
         elif mode == 'resume':
             # Initializes the mask according to the weights
             # which are currently zero-valued. This is required
@@ -171,7 +172,8 @@ class Masking(object):
                         print('W2')
                     self.masks[name][:] = (weight != 0.0).float().data.cuda()
                     self.baseline_nonzero += weight.numel()*density
-            self.apply_mask()
+            if is_masking:
+                self.apply_mask()
         elif mode == 'linear':
             # initialization used in sparse evolutionary training
             # scales the number of non-zero weights linearly proportional
@@ -214,7 +216,8 @@ class Masking(object):
                 growth =  epsilon*sum(weight.shape)
                 prob = growth/np.prod(weight.shape)
                 self.masks[name][:] = (torch.rand(weight.shape) < prob).float().data.cuda()
-            self.apply_mask()
+            if is_masking:
+                self.apply_mask()
 
         self.print_nonzero_counts()
 
@@ -269,8 +272,8 @@ class Masking(object):
             print('='*50, 'ERROR', '='*50)
             raise Exception('Unknown redistribution mode.')
 
-    def at_end_of_epoch(self):
-        self.truncate_weights()
+    def at_end_of_epoch(self, is_masking=True):
+        self.truncate_weights(is_masking)
         if self.verbose:
             self.print_nonzero_counts()
 
@@ -290,7 +293,7 @@ class Masking(object):
                 if self.verbose:
                     self.print_nonzero_counts()
 
-    def add_module(self, module, density, sparse_init='constant'):
+    def add_module(self, module, density, sparse_init='constant', is_masking=True):
         self.modules.append(module)
         for name, tensor in module.named_parameters():
             self.names.append(name)
@@ -301,7 +304,7 @@ class Masking(object):
         self.remove_type(nn.BatchNorm2d, verbose=self.verbose)
         print('Removing 1D batch norms...')
         self.remove_type(nn.BatchNorm1d, verbose=self.verbose)
-        self.init(mode=sparse_init, density=density)
+        self.init(mode=sparse_init, density=density, is_masking=is_masking)
 
     def is_at_start_of_pruning(self, name):
         if self.start_name is None: self.start_name = name
