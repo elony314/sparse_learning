@@ -109,6 +109,10 @@ transformer-xl/pytorch/LM-TFM*
 # vim
 *.swp
 
+# IDE settings
+.idea/
+.vscode/
+
 # pickle
 *.pt
 

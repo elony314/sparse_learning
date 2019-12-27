@@ -14,6 +14,8 @@ import time
 from matplotlib import pyplot as plt
 from sparselearning.funcs import redistribution_funcs, growth_funcs, prune_funcs
 
+from typing import Optional, Callable
+
 def add_sparse_args(parser):
     parser.add_argument('--growth', type=str, default='momentum', help='Growth mode. Choose from: momentum, random, and momentum_neuron.')
     parser.add_argument('--prune', type=str, default='magnitude', help='Prune mode / pruning mode. Choose from: magnitude, SET.')
@@ -93,9 +95,9 @@ class Masking(object):
         self.prune_rate_decay = prune_rate_decay
         self.verbose = verbose
 
-        self.growth_func = growth_mode
-        self.prune_func = prune_mode
-        self.redistribution_func = redistribution_mode
+        self.growth_func: Optional[Callable] = None
+        self.prune_func: Optional[Callable] = None
+        self.redistribution_func: Optional[Callable] = None
 
         self.global_growth = False
         self.global_prune = False
@@ -234,40 +236,45 @@ class Masking(object):
         print('Total parameters under sparsity level of {0}: {1}'.format(density, density*total_size))
 
     def init_growth_prune_and_redist(self):
-        if isinstance(self.growth_func, str) and self.growth_func in growth_funcs:
-            if 'global' in self.growth_func: self.global_growth = True
-            self.growth_func = growth_funcs[self.growth_func]
-        elif isinstance(self.growth_func, str):
-            print('='*50, 'ERROR', '='*50)
-            print('Growth mode function not known: {0}.'.format(self.growth_func))
-            print('Use either a custom growth function or one of the pre-defined functions:')
-            for key in growth_funcs:
-                print('\t{0}'.format(key))
-            print('='*50, 'ERROR', '='*50)
-            raise Exception('Unknown growth mode.')
+        if self.growth_func is None:
+            if self.growth_mode in growth_funcs:
+                if 'global' in self.growth_mode:
+                    self.global_growth = True
+                self.growth_func = growth_funcs[self.growth_mode]
+            else:
+                print('=' * 50, 'ERROR', '=' * 50)
+                print('Growth mode function not known: {0}.'.format(self.growth_mode))
+                print('Use either a custom growth function or one of the pre-defined functions:')
+                for key in growth_funcs:
+                    print('\t{0}'.format(key))
+                print('=' * 50, 'ERROR', '=' * 50)
+                raise Exception('Unknown growth mode.')
 
-        if isinstance(self.prune_func, str) and self.prune_func in prune_funcs:
-            if 'global' in self.prune_func: self.global_prune = True
-            self.prune_func = prune_funcs[self.prune_func]
-        elif isinstance(self.prune_func, str):
-            print('='*50, 'ERROR', '='*50)
-            print('Prune mode function not known: {0}.'.format(self.prune_func))
-            print('Use either a custom prune function or one of the pre-defined functions:')
-            for key in prune_funcs:
-                print('\t{0}'.format(key))
-            print('='*50, 'ERROR', '='*50)
-            raise Exception('Unknown prune mode.')
+        if self.prune_func is None:
+            if self.prune_mode in prune_funcs:
+                if 'global' in self.prune_mode:
+                    self.global_prune = True
+                self.prune_func = prune_funcs[self.prune_mode]
+            else:
+                print('=' * 50, 'ERROR', '=' * 50)
+                print('Prune mode function not known: {0}.'.format(self.prune_mode))
+                print('Use either a custom prune function or one of the pre-defined functions:')
+                for key in prune_funcs:
+                    print('\t{0}'.format(key))
+                print('=' * 50, 'ERROR', '=' * 50)
+                raise Exception('Unknown prune mode.')
 
-        if isinstance(self.redistribution_func, str) and self.redistribution_func in redistribution_funcs:
-            self.redistribution_func = redistribution_funcs[self.redistribution_func]
-        elif isinstance(self.redistribution_func, str):
-            print('='*50, 'ERROR', '='*50)
-            print('Redistribution mode function not known: {0}.'.format(self.redistribution_func))
-            print('Use either a custom redistribution function or one of the pre-defined functions:')
-            for key in redistribution_funcs:
-                print('\t{0}'.format(key))
-            print('='*50, 'ERROR', '='*50)
-            raise Exception('Unknown redistribution mode.')
+        if self.redistribution_func is None:
+            if self.redistribution_mode in redistribution_funcs:
+                self.redistribution_func = redistribution_funcs[self.redistribution_mode]
+            else:
+                print('=' * 50, 'ERROR', '=' * 50)
+                print('Redistribution mode function not known: {0}.'.format(self.redistribution_mode))
+                print('Use either a custom redistribution function or one of the pre-defined functions:')
+                for key in redistribution_funcs:
+                    print('\t{0}'.format(key))
+                print('=' * 50, 'ERROR', '=' * 50)
+                raise Exception('Unknown redistribution mode.')
 
     def at_end_of_epoch(self):
         self.truncate_weights()
