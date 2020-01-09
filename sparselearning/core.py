@@ -373,7 +373,10 @@ class Masking(object):
                     # determine if matrix is relativly dense but still growing
                     expected_variance = 1.0/len(list(self.name2variance.keys()))
                     actual_variance = self.name2variance[name]
-                    expected_vs_actual = expected_variance/actual_variance
+                    if actual_variance != 0:
+                        expected_vs_actual = expected_variance/actual_variance
+                    else:
+                        expected_vs_actual = 0
                     if expected_vs_actual < 1.0:
                         # growing
                         self.name2prune_rate[name] = min(sparsity, self.name2prune_rate[name])
